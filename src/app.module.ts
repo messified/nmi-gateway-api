@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DirectPostService } from './direct-post/direct-post.service';
+import { DirectPostController } from './direct-post/direct-post.controller';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { DirectPostService } from './direct-post/direct-post.service';
       expandVariables: true,
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, DirectPostController],
   providers: [
     AppService,
     DirectPostService],
