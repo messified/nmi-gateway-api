@@ -1,10 +1,11 @@
 import { Injectable, HttpService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as querystring from 'querystring';
 import { IncomingRequest } from './request.interface';
+import * as querystring from 'querystring';
 
 @Injectable()
 export class DirectPostService {
+  url: string;
   securityKey: string;
   billing: any[];
   shipping: any[];
@@ -14,6 +15,7 @@ export class DirectPostService {
     private httpService: HttpService,
   ) {
     this.securityKey = this.configService.get('API_KEY');
+    this.url = this.configService.get('NMI_TRANSACT_URL');
   }
 
   async processPayment(incomingRequest: IncomingRequest): Promise<any> {
@@ -42,14 +44,11 @@ export class DirectPostService {
       cvv: paymentInfo.cvv,
     };
 
-    // Merge together all request options into one object
     return Object.assign(requestOptions, this.billing, this.shipping);
   }
 
   private async sendDirectPostRequest(data: any): Promise<any> {
     try {
-      const url = 'https://secure.networkmerchants.com/api/transact.php';
-
       data.security_key = this.securityKey;
       data = querystring.stringify(data);
 
@@ -60,7 +59,7 @@ export class DirectPostService {
         },
       };
 
-      return await this.httpService.post(url, data, options).toPromise();
+      return await this.httpService.post(this.url, data, options).toPromise();
     } catch (e) {
       throw e;
     }

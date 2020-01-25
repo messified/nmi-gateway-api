@@ -13,8 +13,6 @@ import { DirectPostController } from './direct-post/direct-post.controller';
     }),
   ],
   controllers: [AppController, DirectPostController],
-  providers: [
-    AppService,
-    DirectPostService],
+  providers: [AppService, DirectPostService],
 })
 export class AppModule {}
