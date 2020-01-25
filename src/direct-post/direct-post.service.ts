@@ -18,8 +18,8 @@ export class DirectPostService {
   async processPayment(incomingRequest: any) {
     try {
       const billing = incomingRequest.billingInfo;
-      const shipping = incomingRequest.billingInfo;
-      const paymentInfo = incomingRequest.billingInfo;
+      const shipping = incomingRequest.shippingInfo;
+      const paymentInfo = incomingRequest.paymentInfo;
 
       this.setBilling(billing);
       this.setShipping(shipping);
