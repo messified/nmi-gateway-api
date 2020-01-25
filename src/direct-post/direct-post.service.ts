@@ -1,6 +1,7 @@
 import { Injectable, HttpService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as querystring from 'querystring';
+import { IncomingRequest } from './request.interface';
 
 @Injectable()
 export class DirectPostService {
@@ -15,7 +16,7 @@ export class DirectPostService {
     this.securityKey = this.configService.get('API_KEY');
   }
 
-  async processPayment(incomingRequest: any) {
+  async processPayment(incomingRequest: IncomingRequest): Promise<any> {
     try {
       const billing = incomingRequest.billingInfo;
       const shipping = incomingRequest.shippingInfo;
@@ -26,16 +27,13 @@ export class DirectPostService {
 
       const saleRequest = this.generateSaleRequest(paymentInfo);
 
-      const response = await this.sendDirectPostRequest(saleRequest);
-
-      // tslint:disable-next-line:no-console
-      console.log(response);
+      return await this.sendDirectPostRequest(saleRequest);
     } catch (e) {
       throw e;
     }
   }
 
-  private generateSaleRequest(paymentInfo) {
+  private generateSaleRequest(paymentInfo): object {
     const requestOptions = {
       type: 'sale',
       amount: paymentInfo.amount,
@@ -48,7 +46,7 @@ export class DirectPostService {
     return Object.assign(requestOptions, this.billing, this.shipping);
   }
 
-  private async sendDirectPostRequest(data: any) {
+  private async sendDirectPostRequest(data: any): Promise<any> {
     try {
       const url = 'https://secure.networkmerchants.com/api/transact.php';
 
@@ -68,7 +66,7 @@ export class DirectPostService {
     }
   }
 
-  private setBilling(billingInformation) {
+  private setBilling(billingInformation): any {
     const validBillingKeys = [
       'first_name',
       'last_name',
@@ -94,7 +92,7 @@ export class DirectPostService {
     this.billing = billingInformation;
   }
 
-  private setShipping(shippingInformation) {
+  private setShipping(shippingInformation): any {
     const validShippingKeys = [
       'shipping_first_name',
       'shipping_last_name',
