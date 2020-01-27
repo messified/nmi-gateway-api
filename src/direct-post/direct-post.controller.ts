@@ -1,13 +1,13 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { DirectPostService } from './direct-post.service';
-import { IncomingRequest } from './request.interface';
+import { RawRequest } from './request.interface';
 
 @Controller('direct-post')
 export class DirectPostController {
   constructor(private readonly directPostService: DirectPostService) {}
 
   @Post()
-  async directPost(@Body() incomingRequest: IncomingRequest) {
-    return await this.directPostService.processPayment(incomingRequest);
+  async directPost(@Body() rawRequest: RawRequest) {
+    return await this.directPostService.processPayment(rawRequest);
   }
 }

@@ -1,7 +1,9 @@
 import { Injectable, HttpService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IncomingRequest } from './request.interface';
+import { IncomingRequest, RawRequest } from './request.interface';
 import * as querystring from 'querystring';
+import * as https from 'https';
+import * as url from 'url';
 
 @Injectable()
 export class DirectPostService {
@@ -9,6 +11,7 @@ export class DirectPostService {
   securityKey: string;
   billing: any[];
   shipping: any[];
+  response: any;
 
   constructor(
     private configService: ConfigService,
@@ -18,18 +21,18 @@ export class DirectPostService {
     this.url = this.configService.get('NMI_TRANSACT_URL');
   }
 
-  async processPayment(incomingRequest: IncomingRequest): Promise<any> {
+  async processPayment(rawRequest: RawRequest): Promise<any> {
     try {
+      const incomingRequest = this.parseRawRequest(rawRequest);
       const billing = incomingRequest.billingInfo;
-      const shipping = incomingRequest.shippingInfo;
       const paymentInfo = incomingRequest.paymentInfo;
 
       this.setBilling(billing);
-      this.setShipping(shipping);
 
       const saleRequest = this.generateSaleRequest(paymentInfo);
 
-      return await this.sendDirectPostRequest(saleRequest);
+      // return await this.sendDirectPostRequest(saleRequest);
+      return await this.doRequest(saleRequest);
     } catch (e) {
       throw e;
     }
@@ -39,23 +42,76 @@ export class DirectPostService {
     const requestOptions = {
       type: 'sale',
       amount: paymentInfo.amount,
-      ccnumber: paymentInfo.ccNum,
-      ccexp: paymentInfo.ccExp,
+      ccnumber: paymentInfo.ccnumber,
+      ccexp: paymentInfo.ccexp,
       cvv: paymentInfo.cvv,
     };
 
-    return Object.assign(requestOptions, this.billing, this.shipping);
+    return Object.assign(requestOptions, this.billing);
+  }
+
+  private async doRequest(postData) {
+    const hostName = 'secure.networkmerchants.com';
+    const path = '/api/transact.php';
+
+    postData.security_key = this.securityKey;
+    postData = querystring.stringify(postData);
+
+    const options = {
+      hostname: hostName,
+      path,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(postData),
+      },
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, response => {
+        response.on('data', chunk => {
+          const params = new URLSearchParams(`${chunk}`);
+          // {
+          //   'response' => '1',
+          //   'responsetext' => 'SUCCESS',
+          //   'authcode' => '123456',
+          //   'transactionid' => '5146117916',
+          //   'avsresponse' => 'N',
+          //   'cvvresponse' => 'N',
+          //   'orderid' => '',
+          //   'type' => 'sale',
+          //   'response_code' => '100',
+          // }
+          this.response = {
+            response_text: params.get('responsetext'),
+            response_code: params.get('response_code'),
+            transaction_id: params.get('transactionid'),
+          };
+        });
+        response.on('end', () => {
+          resolve(this.response);
+        });
+      });
+
+      req.on('error', e => {
+        reject(e.message);
+      });
+
+      // Write post data to request body
+      req.write(postData);
+      req.end();
+    });
   }
 
   private async sendDirectPostRequest(data: any): Promise<any> {
     try {
       data.security_key = this.securityKey;
-      data = querystring.stringify(data);
+      const queryData = querystring.stringify(data);
 
       const options = {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': Buffer.byteLength(data),
+          'Content-Length': Buffer.byteLength(queryData),
         },
       };
 
@@ -113,5 +169,29 @@ export class DirectPostService {
     }
 
     this.shipping = shippingInformation;
+  }
+
+  private parseRawRequest(rawRequest: RawRequest) {
+    return {
+      billingInfo: {
+        first_name: rawRequest.first_name,
+        last_name: rawRequest.last_name,
+        address1: rawRequest.address1,
+        address2: rawRequest.address2,
+        city: rawRequest.city,
+        state: rawRequest.state,
+        zip: rawRequest.zip,
+        country: rawRequest.country,
+        phone: rawRequest.phone,
+        email: rawRequest.email,
+      },
+      paymentInfo: {
+        type: 'sale',
+        amount: rawRequest.amount,
+        ccnumber: rawRequest.cc_number,
+        ccexp: `${rawRequest.month}/${rawRequest.year}`,
+        cvv: rawRequest.cvv,
+      },
+    };
   }
 }
