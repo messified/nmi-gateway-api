@@ -1,9 +1,9 @@
-service: serverless-nestjs
+service: direct-post
 
 provider:
   name: aws
-  runtime: nodejs8.10
-
+  region: us-west-2
+  runtime: nodejs12.x
 plugins:
   - serverless-offline
 

@@ -31,7 +31,6 @@ export class DirectPostService {
 
       const saleRequest = this.generateSaleRequest(paymentInfo);
 
-      // return await this.sendDirectPostRequest(saleRequest);
       return await this.doRequest(saleRequest);
     } catch (e) {
       throw e;
@@ -71,18 +70,8 @@ export class DirectPostService {
       const req = https.request(options, response => {
         response.on('data', chunk => {
           const params = new URLSearchParams(`${chunk}`);
-          // {
-          //   'response' => '1',
-          //   'responsetext' => 'SUCCESS',
-          //   'authcode' => '123456',
-          //   'transactionid' => '5146117916',
-          //   'avsresponse' => 'N',
-          //   'cvvresponse' => 'N',
-          //   'orderid' => '',
-          //   'type' => 'sale',
-          //   'response_code' => '100',
-          // }
           this.response = {
+            response: params.get('response'),
             response_text: params.get('responsetext'),
             response_code: params.get('response_code'),
             transaction_id: params.get('transactionid'),
@@ -97,7 +86,6 @@ export class DirectPostService {
         reject(e.message);
       });
 
-      // Write post data to request body
       req.write(postData);
       req.end();
     });
